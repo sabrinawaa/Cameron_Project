@@ -18,7 +18,7 @@ class partrec_foil_plotting:
         )
         phase_space["X"] = phase_space["X"] * 10
         phase_space["Y"] = phase_space["Y"] * 10
-        # add "R" column for radial distance from origin in mm
+        # add "R" column for radial distance from origin in cm
         phase_space["R"] = np.sqrt(
             np.square(phase_space["X"]) + np.square(phase_space["Y"])
         )
@@ -45,7 +45,7 @@ class partrec_foil_plotting:
     # both in millimetres
     # mean energy is calculated within collimator radius only
 
-    def show_transverse_beam(self, particle='e', fov=50, col=50):
+    def show_transverse_beam(self, out_filename, s2_depth, s2_r, particle='e', fov=50, col=50):
         def get_slices(phsp, slice_width=1):
             phsp_xslice = phsp[(phsp["Y"] < slice_width)]
             phsp_xslice = phsp_xslice[(phsp_xslice["Y"] > -slice_width)]
@@ -60,31 +60,31 @@ class partrec_foil_plotting:
         phsp_xslice, phsp_yslice = get_slices(phsp)
         fig, ax = plt.subplots(1, 2, figsize=(10, 5))
         ax[0].hist(phsp_xslice["X"], bins=50, range=[-fov, fov], color="b")
-        ax[0].set_xlabel("X [mm]")
+        ax[0].set_xlabel("X [cm]")
         ax[0].set_ylabel("N")
         ax[0].set_title("X Distribution")
         ax[1].hist(phsp_yslice["Y"], bins=50, range=[-fov, fov], color="b")
-        ax[1].set_xlabel("Y [mm]")
+        ax[1].set_xlabel("Y [cm]")
         ax[1].set_ylabel("N")
         ax[1].set_title("Y Distribution")
-        fig1, ax1 = plt.subplots(1, 2, figsize=(10,5))
-        ax1[0].hist2d(
-            phsp["X"], phsp["Y"], bins=100, range=[[-fov, fov], [-fov, fov]], cmap="jet"
-        )
-        ax1[0].set_xlabel("X [mm]")
-        ax1[0].set_ylabel("Y [mm]")
-        ax1[0].set_title("XY Distribution")
-        ax1[1].hist(phsp["E"], bins=100, color="k")
-        ax1[1].set_xlabel("E [MeV]")
-        ax1[1].set_ylabel("N")
-        ax1[1].set_yscale('log')
-        ax1[1].set_title("Energy Spectrum")
+        # fig1, ax1 = plt.subplots(1, 2, figsize=(10,5))
+        # ax1[0].hist2d(
+        #     phsp["X"], phsp["Y"], bins=100, range=[[-fov, fov], [-fov, fov]], cmap="jet"
+        # )
+        # ax1[0].set_xlabel("X [mm]")
+        # ax1[0].set_ylabel("Y [mm]")
+        # ax1[0].set_title("XY Distribution")
+        # ax1[1].hist(phsp["E"], bins=100, color="k")
+        # ax1[1].set_xlabel("E [MeV]")
+        # ax1[1].set_ylabel("N")
+        # ax1[1].set_yscale('log')
+        # ax1[1].set_title("Energy Spectrum")
 
         col_phsp = phsp[(phsp.R < col)]
         col_phsp = col_phsp.dropna()
-        fig.savefig("Output_figs/Intensity_distribution")
-        fig1.savefig("Output_figs/XY_Energy")
-        plt.show()
+        fig.savefig("Output_figs/"+out_filename+"_s2depth=" + str(s2_depth) + "s2r=" + str(s2_r) +"Intensity.png")
+        #fig1.savefig("Output_figs/s2depth=" + str(s2_depth) + "s2r=" + str(s2_r) +"XY_Energy.png")
+        #plt.show()
         print(
             "Electron Transmission = " +
             str(len(col_phsp["X"]) / len(phsp["X"]) * 100)

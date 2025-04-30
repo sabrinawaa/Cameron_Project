@@ -6,10 +6,12 @@ Created on Wed Mar 29 09:51:43 2023
 @author: robertsoncl
 """
 import numpy as np
+import pandas as pd
 import os
 from scipy.stats import norm
 import matplotlib.pyplot as plt
-
+from astropy.table import Table
+from astropy.io import ascii
 # class of methods used for generating topas scripts for scattering foils
 
 
@@ -21,7 +23,7 @@ class partrec_gaussian_optimiser_utils():
         self,
         home_directory="/Applications/",
         no_of_threads="6",
-        input_filename="partrec_test.txt",
+        input_filename="topas_main.txt",
         file_directory = '/Users/sabrinawang/Desktop/Cameron_Project/'
     ):
         # write new topas script
@@ -33,7 +35,7 @@ class partrec_gaussian_optimiser_utils():
         file.write("d:Ge/World/HLY = 5.0 m\n")
         file.write("d:Ge/World/HLZ = 5.0 m\n")
         # set world as vacuum for simplicity
-        file.write('s:Ge/World/Material = "Vacuum"\n')
+        file.write('s:Ge/World/Material = "Vacuum"\n \n')
         self.home_directory = home_directory
         self.file_directory = file_directory
         # set filename and file object as class attributes to retrieve later
@@ -210,7 +212,7 @@ class partrec_gaussian_optimiser_utils():
         file.write('s:Ge/ScorerSurface/Type="TsBox"\n')
         file.write('s:Ge/ScorerSurface/Parent = "World"\n')
         # set arbitrary material - vacuum for simplicity
-        file.write('s:Ge/ScorerSurface/Material="Vacuum"\n')
+        file.write('s:Ge/ScorerSurface/Material="G4_WATER"\n')
 
         # set arbitrarily large surface area of scorer
         file.write("d:Ge/ScorerSurface/HLX = 1 m\n")
@@ -252,6 +254,39 @@ class partrec_gaussian_optimiser_utils():
         file.write("d:Ge/Tank/HLZ = " + str(depth / 2) + " mm\n")
         file.write("d:Ge/Tank/TransZ=-" +
                    str(position+depth/2) + " mm\n")
+        
+    def add_tank_bins(self, position, depth, x_bins, y_bins, z_bins):
+        file = self.file
+        file.write('s:Ge/Tank/Type="TsBox"\n')
+        file.write('s:Ge/Tank/Parent = "World"\n')
+        # set arbitrary material - vacuum for simplicity
+        file.write('s:Ge/Tank/Material="G4_WATER"\n')
+        # set arbitrarily large surface area of scorer
+        file.write("d:Ge/Tank/HLX = 0.1 m\n")
+        file.write("d:Ge/Tank/HLY = 0.1 m\n")
+        file.write("d:Ge/Tank/HLZ = " + str(depth / 2) + " mm\n")
+        file.write("d:Ge/Tank/TransZ=-" +
+                   str(position+depth/2) + " mm\n")
+        file.write("i:Ge/Tank/XBins = "+ str(x_bins) + "\n")
+        file.write("i:Ge/Tank/YBins = "+ str(y_bins) + "\n")
+        file.write("i:Ge/Tank/ZBins = "+ str(z_bins) + "\n")
+        file.write('s:Sc/DoseAtTank/Quantity = "DoseToMedium" \n')
+        file.write('s:Sc/DoseAtTank/Component = "Tank"\n')
+        file.write('s:Sc/DoseAtTank/Surface = "Tank/ZPlusSurface"\n')
+        file.write('s:Sc/DoseAtTank/OnlyIncludeParticlesOfGeneration = "Primary"\n')
+        # output as csv file
+        file.write('s:Sc/DoseAtTank/OutputFile = "DoseAtTank' + str(depth) + '"\n')
+        file.write('s:Sc/DoseAtTank/OutputType = "CSV"\n')
+        file.write('s:Sc/DoseAtTank/IfOutputFileAlreadyExists = "Overwrite"\n')
+        # reduce terminal output to improve RunTime and reduce clutter
+        file.write('b:Sc/DoseAtTank/OutputToConsole = "False"\n')
+        # set various checks to 0 to decrease RunTime
+        file.write('b:Ge/CheckForOverlaps = "False" \n')
+        file.write('b:Ge/QuitIfOverlapDetected = "False"\n')
+
+        file.write('b:Ph/ListProcesses = "False"\n')
+        file.write('b:Ge/CheckForUnusedComponents = "False"\n')
+
     # X bending dipole
 
     def add_dipole(self, strength, position, lx, ly, lz):
@@ -271,7 +306,121 @@ class partrec_gaussian_optimiser_utils():
         file.write("u:Ge/Dipole/MagneticFieldDirectionZ=0.0\n")
         file.write("d:Ge/Dipole/MagneticFieldStrength="+str(strength)+" T\n")
 
-    def run_topas(self, view_setup=False):
+#importing rf track
+    def export_phsp(self, R, path_to_phsp_file):
+        X = R[:, 0]
+        PX = R[:, 1]
+        Y = R[:, 2]
+        PY = R[:, 3]
+        E = R[:, 4] #changed from 5 to 4 here
+        # assume constant position in Z at this stage - not physical bu
+        # as we use TOPAS we through away our knowledge of accelerator physics
+        Z = np.zeros(len(X))
+        # we equally weight the beam
+        weight = np.full(len(X), 1)
+        ptype = np.full(len(X), 11)
+        # topas uses rad rather than mrad
+        PX = PX / 1000
+        PY = PY / 1000
+        # topas header uses cm
+        X = X / 10
+        Y = Y / 10
+        # all particles are travelling forwards
+        neg_cos = np.full(len(X), 1)
+        # all primary particles, so first score is always 1, like weight
+        first_score = weight
+        # initialise dataframe with all relevant data required by TOPAS
+        phase_space_data = pd.DataFrame(
+            {
+                "X": X,
+                "Y": Y,
+                "Z": Z,
+                "PX": PX,
+                "PY": PY,
+                "E": E,
+                "Weight": weight,
+                "ptype": ptype,
+                "neg_cos": neg_cos,
+                "first_score": first_score,
+            }
+        )
+        # convert DataFrame into astropy table for manipulation
+        phase_space_table = Table.from_pandas(phase_space_data)
+        # format for topas input
+        ascii.write(
+            phase_space_table,
+            path_to_phsp_file,
+            format="fixed_width_no_header",
+            delimiter="\t",
+            overwrite=True,
+        )
+    # TOPAS beam inputs need a header alongside the .phsp file so that it knows
+    # how to process the beam data
+    # path_to_headerfile is just where the new file will go and its name
+    # this must be the same filename as the phsp file, but ending with .header
+    # rather than .phsp
+
+
+    def write_header(self, R, path_to_header_file):
+        file = self.file
+        E = R[:, 4] #changed from 5 to 4
+        N_particles_str = str(len(E))
+        file = open(path_to_header_file, "w")
+        file.write("TOPAS ASCII Phase Space\n")
+        file.write("\n")
+        file.write("Number of Original Histories: " + N_particles_str + "\n")
+        file.write(
+            "Number of Original Histories that Reached Phase Space: "
+            + N_particles_str
+            + "\n"
+        )
+        file.write("Number of Scored Particles: " + N_particles_str + "\n")
+        file.write("\n")
+        file.write("Columns of data are as follows:\n")
+        file.write(" 1: Position X [cm]\n")
+        file.write(" 2: Position Y [cm]\n")
+        file.write(" 3: Position Z [cm]\n")
+        file.write(" 4: Direction Cosine X\n")
+        file.write(" 5: Direction Cosine Y\n")
+        file.write(" 6: Energy [MeV]\n")
+        file.write(" 7: Weight\n")
+        file.write(" 8: Particle Type (in PDG Format)\n")
+        file.write(
+            " 9: Flag to tell if Third Direction Cosine is Negative (1 means true)\n"
+        )
+        file.write(
+            "10: Flag to tell if this is the First Scored Particle from this History (1 means true)\n"
+        )
+        file.write("\n")
+        file.write("Number of e-: " + N_particles_str + "\n")
+        file.write("\n")
+        file.write("Minimum Kinetic Energy of e-: " + str(min(E)) + " MeV\n")
+        file.write("\n")
+        file.write("Maximum Kinetic Energy of e-: " + str(max(E)) + " MeV\n")
+
+    # function adds
+    # relevant lines in TOPAS to import beam from phsp and header files
+    # acc_source is the name of the beam I've given here, this is arbitrary
+    # position allows you to modify the position in Z in the world that the imported
+    # beam starts from
+    # infile is the path to the phase space file you want to import
+    # give this without the .phsp and it will automatically find the
+    # header as well - make sure those are in the same directory
+
+
+    def import_beam_topas(self,infile, position=0):
+        file = self.file
+        file.write('s:So/acc_source/Type = "PhaseSpace"\n')
+        file.write('s:So/acc_source/Component = "World"\n')
+        file.write('s:So/acc_source/PhaseSpaceFileName = "'+infile+'"\n')
+        file.write('d:So/acc_source/TransZ = -'+str(position)+' mm\n')
+
+        
+
+    def run_topas(self, topas_filename=lambda self: self.input_filename, view_setup=False):
+        if callable(topas_filename):
+            topas_filename = topas_filename(self) 
+
         file = self.file
         if view_setup is True:
             file.write('s:Gr/ViewA/Type             = "OpenGL"\n')
@@ -285,5 +434,5 @@ class partrec_gaussian_optimiser_utils():
             "export QT_QPA_PLATFORM_PLUGIN_PATH=/Applications/topas/Frameworks && "
             "/Applications/topas/bin/topas "
             + self.file_directory
-            + self.input_filename
+            + topas_filename
         )
