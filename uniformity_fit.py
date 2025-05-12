@@ -7,15 +7,18 @@ from topasToDose import getDosemap
 def supergaussian(x, y, A, x0, y0, sigma_x, sigma_y, P):
     return A * np.exp(-( (x-x0)**2 /(2*sigma_x**2) + (y-y0)**2 /(2*sigma_y**2))**P)
 
+def supergaussian1D(x, A, x0, sigma_x, P):
+    return A * np.exp(-( (x-x0)**2 /(2*sigma_x**2) )**P)
+
 
 def MSE(params, x, y, dose_map):
     model = supergaussian(x, y, *params)
     return np.sum((model - dose_map)**2)  # Mean squared error
 
 def r90(sig,P):
-    return sig * np.sqrt(2) * (-np.log(0.9))**(0.5*P)
+    return sig * np.sqrt(2) * (-np.log(0.9))**(1/(2*P))
 
-def plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90):
+def plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, depth,output_filename):
     dose_y = fitted_map[fitted_map.shape[0] // 2, :]  # Middle row (horizontal slice)
     dose_x = fitted_map[:, fitted_map.shape[1] // 2]  # Middle column (vertical slice)
 
@@ -60,14 +63,17 @@ def plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90):
     ax_y.legend()
 
     plt.tight_layout()
-    plt.show()
-    plt.savefig("Output_figs/SupergaussianFit.png")
+    # plt.show()
+    plt.savefig("Output_figs/" +output_filename+ f"Depth{depth}_SupergaussianFit.png")
 
-    
-def main():
-    n_particles = 100000
-    dose_depth = 500
-    x,y, doseMap = getDosemap("DoseAtTank"+str(dose_depth)+".csv",n_particles, dose_depth, plot = False)
+def fitDoseMap (n_particles, dose_depth,output_filename):
+    x,y, doseMap = getDosemap("DoseAtTank"+str(dose_depth)+".csv",n_particles, dose_depth, output_filename, plot = False)
+    x_center = (x.max() + x.min()) / 2  # Find the midpoint of x
+    y_center = (y.max() + y.min()) / 2  # Find the midpoint of y
+
+    # Shift x and y to center them at (0,0)
+    x = x - x_center
+    y = y - y_center
     x, y = np.meshgrid(x, y)
     x,y,doseMap = x[10:40, 10:40], y[10:40, 10:40], doseMap[10:40, 10:40]  #only the central 60% of the beam
     
@@ -82,11 +88,38 @@ def main():
     fitted_map = supergaussian(x, y, *fit_params)
     sig, P = fit_params[3], fit_params[5]
     r_90 = r90(sig,P)
-    plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90)
+    plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, dose_depth, output_filename)
+
+def fitIntensity(n_particles, dose_depth,output_filename):
+
+    x, y = np.meshgrid(x, y)
+    x,y = x[10:40, 10:40], y[10:40, 10:40]  #only the central 60% of the beam
+    
+    
+    p0=[0.2, np.max(x)//2, np.max(y)//2, 8, 8, 6]
+    #curvefit 2d histogram to supergaussian
+    # Perform the optimization
+    result = minimize(MSE, p0, args=(x, y, doseMap), method='L-BFGS-B')
+    fit_params = result.x
+
+    # Calculate the fitted super-Gaussian
+    fitted_map = supergaussian(x, y, *fit_params)
+    sig, P = fit_params[3], fit_params[5]
+    r_90 = r90(sig,P)
+    plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, dose_depth, output_filename)
+
+
+    
+def main():
+    n_particles = 100000
+    dose_depth = 100
+    output_filename = "ini_trial"
+    
+    fitDoseMap(n_particles, dose_depth, output_filename)
     
     
 
-main()
+# main()
         
 
 

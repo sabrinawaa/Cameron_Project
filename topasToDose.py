@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 # simParticles is the number of particles that the simulation was run with
 # acChargenC is the simulated total charge to create an appropriate scaling factor (effectively arbitrary, 10nC is reasonable for now)
 
-def getDosemap(filePath,simParticles,dose_depth,acChargenC=10, plot=False):
+def getDosemap(filePath,simParticles,dose_depth,outputFileName,acChargenC=10, plot=False):
     
     doseMap = BinnedResult(filePath)#  2D array where each element corresponds to the dose deposited in a specific bin. The dose information is stored in the numerical values of the array elements.
     rawDosemap=np.squeeze(doseMap.data['Sum'])
@@ -36,8 +36,8 @@ def getDosemap(filePath,simParticles,dose_depth,acChargenC=10, plot=False):
         ax_main = fig.add_subplot(grid[1:, :-1])
         im = ax_main.imshow(scaledDosemap, cmap='viridis', origin='lower')
         ax_main.set_title("Dose Map at Depth =" + str(dose_depth) + "mm")
-        ax_main.set_xlabel("X (cm)")
-        ax_main.set_ylabel("Y (cm)")
+        ax_main.set_xlabel("X (mm)")
+        ax_main.set_ylabel("Y (mm)")
         cbar = plt.colorbar(im, ax=ax_main, orientation='vertical', fraction=0.046, pad=0.04)
         cbar.set_label("Dose (Gy)")
 
@@ -57,7 +57,7 @@ def getDosemap(filePath,simParticles,dose_depth,acChargenC=10, plot=False):
         ax_y.tick_params(axis='y', which='both', left=False, labelleft=False)  # Hide y-ticks
         ax_y.set_ylim(ax_main.get_ylim())  # Align the Y-axis with the 2D map
         plt.tight_layout()
-        plt.savefig("Output_figs/dosedepth=" + str(dose_depth) +"dose.png")
+        plt.savefig("Output_figs/"+ outputFileName + "dosedepth=" + str(dose_depth) +"dose.png")
         # Plot X and Y 1D histograms
 
         
@@ -75,7 +75,7 @@ def getDosemap(filePath,simParticles,dose_depth,acChargenC=10, plot=False):
         # ax1[1].set_ylabel('Summed Dose (Gy)')   
 
         # plt.tight_layout()  # Adjust layout for better spacing
-        # fig1.savefig("Output_figs/dosedepth=" + str(dose_depth) + "_xy_dose.png")
+        # fig1.savefig("Output_figs/" + outputFileName + "dosedepth=" + str(dose_depth) + "_xy_dose.png")
     return x,y, scaledDosemap
 
 #still need to convert bins to mm 

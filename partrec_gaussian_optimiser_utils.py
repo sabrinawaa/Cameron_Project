@@ -226,8 +226,8 @@ class partrec_gaussian_optimiser_utils():
         file.write('s:Sc/patient_beam/Quantity = "PhaseSpace"\n')
         # place at previously defined patient location
         file.write('s:Sc/patient_beam/Surface = "ScorerSurface/ZPlusSurface"\n')
-        file.write(
-            's:Sc/patient_beam/OnlyIncludeParticlesOfGeneration = "Primary"\n')
+        # file.write(
+        #     's:Sc/patient_beam/OnlyIncludeParticlesOfGeneration = "Primary"\n') # if delete will also include photons
         # output as ascii file
         file.write('s:Sc/patient_beam/OutputType = "ASCII"\n')
         file.write('s:Sc/patient_beam/IfOutputFileAlreadyExists = "Overwrite"\n')
@@ -236,7 +236,6 @@ class partrec_gaussian_optimiser_utils():
         # set various checks to 0 to decrease RunTime
         file.write('b:Ge/CheckForOverlaps = "False" \n')
         file.write('b:Ge/QuitIfOverlapDetected = "False"\n')
-
         file.write('b:Ph/ListProcesses = "False"\n')
         file.write('b:Ge/CheckForUnusedComponents = "False"\n')
         self.pp = position
