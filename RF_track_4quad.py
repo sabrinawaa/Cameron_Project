@@ -11,12 +11,12 @@ drift_l = 0.2
 def gaussian(x,A,mu,sig):
     return A * np.exp(- (x-mu)**2 /(2*sig**2))
 
-def four_quads(Lquad, k11, k12, k13, k14, Ldrift, N_particles, Energy ,plot=True):
-    Q1 =RFT.Quadrupole(Lquad, k11) 
-    Q2 = RFT.Quadrupole(Lquad, k12)
-    Q3 = RFT.Quadrupole(Lquad, k13)
-    Q4 = RFT.Quadrupole(Lquad, k14)
-    Drift = RFT.Drift(Ldrift)
+def four_quads(Lquad, k11, k12, k13, k14, Ldrift, N_particles, Energy ,L_drift_after=0, plot=True, saveparams=True):
+    Q1 =RFT.Quadrupole(Lquad, Energy, k11) 
+    Q2 = RFT.Quadrupole(Lquad, Energy, k12)
+    Q3 = RFT.Quadrupole(Lquad, Energy, k13)
+    Q4 = RFT.Quadrupole(Lquad, Energy, k14)
+    Drift = RFT.Drift(Ldrift +L_drift_after)
     Drift.set_tt_nsteps(50)  
 
     #lattice
@@ -130,6 +130,7 @@ def four_quads(Lquad, k11, k12, k13, k14, Ldrift, N_particles, Energy ,plot=True
         scatter_hist(M[:,0], M[:,2], axs['scatter'], axs['histx'], axs['histy'])
 
         fig.savefig(f"Output_figs/RFT_k1s={k11}_{k12}_{k13}_{k14}.png")
+    if saveparams:
         np.savetxt(f"RFT_k1s={k11}_{k12}_{k13}_{k14}_N={N_particles}.txt",M) 
     
     return M
