@@ -128,7 +128,7 @@ def write_header(R, path_to_header_file):
 
 
 def import_beam_topas(infile, position=0):
-    file = open('topas_script.txt', 'a')
+    file = open('topas_from_rft.txt', 'w')
     file.write('s:So/acc_source/Type = "PhaseSpace"\n')
     file.write('s:So/acc_source/Component = "World"\n')
     file.write('s:So/acc_source/PhaseSpaceFileName = "'+infile+'"\n')

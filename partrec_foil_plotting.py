@@ -82,18 +82,27 @@ class partrec_foil_plotting:
         sig_x,sig_y, P_x, P_y = params_x[2], params_y[2], params_x[3], params_y[3]
         r90_x, r90_y = r90(sig_x, P_x), r90(sig_y, P_y)
 
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5)) 
+        font_size = 18
+        plt.rcParams.update({
+            'font.size': font_size,          # Default font size for titles, labels, etc.
+            'axes.titlesize': font_size,     # Axis title size
+            'axes.labelsize': font_size,     # Axis labels (x and y)
+            'xtick.labelsize': font_size,    # X-axis tick labels
+            'ytick.labelsize': font_size,    # Y-axis tick labels
+        })
+
+        fig, ax = plt.subplots(1, 2, figsize=(10, 6)) 
         ax[0].hist(phsp_xslice["X"], bins=n_bins, range=[-fov, fov], color="b",alpha=0.6,label= particle+ ' X-Intensity')
         ax[0].plot(xy_fit_curve, supergaussian1D(xy_fit_curve, *params_x), 'r-', label=f"SuperGaussian Fit (P={params_x[3]:.2f})")
         ax[0].set_xlabel("X [mm]")
         ax[0].set_ylabel("N")
-        ax[0].set_title(f"X fit P = {P_x:.2f}, sigma = {sig_x:.2f}, r90 = {r90_x:.2f}")
+        ax[0].set_title(f"X fit sigma = {sig_x:.2f}, r90 = {r90_x:.2f}")
         ax[0].legend()
         ax[1].hist(phsp_yslice["Y"], bins=n_bins, range=[-fov, fov], color="b",alpha=0.6,label= particle+ ' Y-Intensity')
         ax[1].plot(xy_fit_curve, supergaussian1D(xy_fit_curve, *params_y), 'r-', label=f"SuperGaussian Fit (P={params_y[3]:.2f})")
         ax[1].set_xlabel("Y [mm]")
         ax[1].set_ylabel("N")
-        ax[1].set_title(f"Y fit P = {P_y:.2f}, sigma = {sig_y:.2f}, r90 = {r90_y:.2f}")
+        ax[1].set_title(f"Y fit sigma = {sig_y:.2f}, r90 = {r90_y:.2f}")
         ax[1].legend()
         # fig1, ax1 = plt.subplots(1, 2, figsize=(10,5))
         # ax1[0].hist2d(

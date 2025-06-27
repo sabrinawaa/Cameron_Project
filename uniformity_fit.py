@@ -28,7 +28,6 @@ def plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, depth,output_filename):
     # Create the figure with subplots
     fig = plt.figure(figsize=(10, 8))
     grid = plt.GridSpec(4, 5, hspace=0.4, wspace=0.6, width_ratios=[1, 1, 1, 0.1, 1])  
-    print(x.shape,y.shape,doseMap.shape)
     # Main 2D scatter plot
     ax_main = fig.add_subplot(grid[1:, :-2])  # Use only the first 3 columns (exclude colorbar space)
     im = ax_main.scatter(x, y, c=doseMap, cmap="viridis", s=120)
@@ -66,7 +65,7 @@ def plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, depth,output_filename):
     # plt.show()
     plt.savefig("Output_figs/" +output_filename+ f"Depth{depth}_SupergaussianFit.png")
 
-def fitDoseMap (n_particles, dose_depth,output_filename):
+def fitDoseMap (n_particles, dose_depth,output_filename, zoom_factor=1):
     x,y, doseMap = getDosemap("DoseAtTank"+str(dose_depth)+".csv",n_particles, dose_depth, output_filename, plot = False)
     x_center = (x.max() + x.min()) / 2  # Find the midpoint of x
     y_center = (y.max() + y.min()) / 2  # Find the midpoint of y
@@ -75,7 +74,10 @@ def fitDoseMap (n_particles, dose_depth,output_filename):
     x = x - x_center
     y = y - y_center
     x, y = np.meshgrid(x, y)
-    x,y,doseMap = x[10:40, 10:40], y[10:40, 10:40], doseMap[10:40, 10:40]  #only the central 60% of the beam
+
+    lower_index =  int( (len(x) -len(x) * zoom_factor) /2 )# Lower bound for the dose values
+    upper_index = int( len(x)- lower_index) # Upper bound for the dose values
+    x,y,doseMap = x[lower_index:upper_index, lower_index:upper_index],y[lower_index:upper_index, lower_index:upper_index], doseMap[lower_index:upper_index, lower_index:upper_index]  #only the central 60% of the beam
     
     
     p0=[0.2, np.max(x)//2, np.max(y)//2, 8, 8, 6]
@@ -90,23 +92,7 @@ def fitDoseMap (n_particles, dose_depth,output_filename):
     r_90 = r90(sig,P)
     plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, dose_depth, output_filename)
 
-def fitIntensity(n_particles, dose_depth,output_filename):
 
-    x, y = np.meshgrid(x, y)
-    x,y = x[10:40, 10:40], y[10:40, 10:40]  #only the central 60% of the beam
-    
-    
-    p0=[0.2, np.max(x)//2, np.max(y)//2, 8, 8, 6]
-    #curvefit 2d histogram to supergaussian
-    # Perform the optimization
-    result = minimize(MSE, p0, args=(x, y, doseMap), method='L-BFGS-B')
-    fit_params = result.x
-
-    # Calculate the fitted super-Gaussian
-    fitted_map = supergaussian(x, y, *fit_params)
-    sig, P = fit_params[3], fit_params[5]
-    r_90 = r90(sig,P)
-    plotDoseMap(x, y, doseMap,fitted_map,P,sig,r_90, dose_depth, output_filename)
 
 
     

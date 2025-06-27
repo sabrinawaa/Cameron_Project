@@ -261,8 +261,8 @@ class partrec_gaussian_optimiser_utils():
         # set arbitrary material - vacuum for simplicity
         file.write('s:Ge/Tank/Material="G4_WATER"\n')
         # set arbitrarily large surface area of scorer
-        file.write("d:Ge/Tank/HLX = 0.1 m\n")
-        file.write("d:Ge/Tank/HLY = 0.1 m\n")
+        file.write("d:Ge/Tank/HLX = 0.15 m\n")
+        file.write("d:Ge/Tank/HLY = 0.15 m\n")
         file.write("d:Ge/Tank/HLZ = " + str(depth / 2) + " mm\n")
         file.write("d:Ge/Tank/TransZ=-" +
                    str(position+depth/2) + " mm\n")

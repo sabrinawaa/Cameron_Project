@@ -5,8 +5,7 @@ import numpy as np
 
 def main(): 
 
-    flavour = "workday"
-    folder ="submit/scan_k1s/"
+    folder ="submit/scan_k1s_10m/"
     os.makedirs(os.path.join(folder, "out"), exist_ok=True)
     os.makedirs(os.path.join(folder, "err"), exist_ok=True)
     os.makedirs(os.path.join(folder, "log"), exist_ok=True)
